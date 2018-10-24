@@ -22,6 +22,8 @@ class ARS_agent():
         self.env = gym.make(env)     
         self.normalizer = Normalizer(self.env.observation_space.shape[0])
     
+    
+    ### The main loop for training. Calls other methods and returns the final policy
     def train(self):
         theta = np.zeros((self.env.observation_space.shape[0], self.env.action_space.shape[0]))
         for i in range(self.n_iter):
@@ -33,6 +35,7 @@ class ARS_agent():
             theta = self.update(theta, best_rollouts, sigma_rewards)
         return theta
         
+    ### Creating the random samples
     def sample_deltas(self):
         n, p = (self.env.observation_space.shape[0], self.env.action_space.shape[0])
         deltas = np.zeros((self.n_deltas, n, p))
@@ -40,6 +43,7 @@ class ARS_agent():
             deltas[i] = np.random.normal(0, self.sigma, (n,p))
         return deltas
     
+    ### Returns the reward or the collection of rewards if deltas!=None
     def evaluate(self, theta, deltas = None):
         if deltas is None:
             return self.episode(theta)
@@ -53,6 +57,9 @@ class ARS_agent():
                 rollouts.append([r_pos, r_neg, deltas[i]])
             return rewards, rollouts
     
+    ### Actually plays an episode and returns the rewards.
+    ### Notice that it uses the normalizer class (defined below) to get inputs between -1 and 1
+    ### If render==True, it displays the episode on the screen 
     def episode(self, theta, render = False):
         state = self.env.reset()
         total_reward = 0.
@@ -71,14 +78,15 @@ class ARS_agent():
             self.env.close()
         return total_reward
     
-    
+    ### Only keeps the n_best best improvements (n_best = n_deltas by default)
     def keep_best(self, rollouts):
         best_rollouts = []
         for [r_pos, r_neg, delta] in rollouts:
             best_rollouts.append(- max(r_pos, r_neg))        #Minus is to get descending order
         return [rollouts[k] for k in np.argsort(best_rollouts)[:self.n_best]]
         
-        
+    
+    ### Does the update step, using the previously defined hyperparameters    
     def update(self, theta, best_rollouts, sigma_rewards):
         step = np.zeros(theta.shape)
         for r_pos, r_neg, delta in best_rollouts:
@@ -90,7 +98,6 @@ class ARS_agent():
         
         
 class Normalizer():
-    
     def __init__(self, nb_inputs):
         self.mean = np.zeros(nb_inputs)
         self.std = np.zeros(nb_inputs)
@@ -114,10 +121,5 @@ class Normalizer():
 
 
 agent = ARS_agent(ENV_NAME)
-#policy = agent.train()
-#total_reward = agent.episode(policy, render = True)    
-
-def profiler():      
-    agent_test = ARS_agent('BipedalWalker-v2', n_iter = 10)
-    policy = agent_test.train()
-    return policy
+policy = agent.train()
+total_reward = agent.episode(policy, render = True)   
