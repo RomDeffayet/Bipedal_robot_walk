@@ -1,2 +1,32 @@
-# Bipedal_robot_walk
-Making the bipedal robot form OpenAI's gym Box2D environment walk
+# Making a Robot walk
+
+This python file implements the **Augmented Random Search** algorithm. I did it as a midterm assignment for [Move37](https://www.theschool.ai/courses/move-37-course/), a [School of AI](https://www.theschool.ai) course.
+
+
+## Getting started
+
+Run the file to start training. The hyperparameters (including number of training steps) can be tuned in  the ``ARS_agent`` class.
+
+
+### Prerequisites
+
+You need to install both ``gym`` and ``Box2D`` to run the file.
+
+```
+pip install gym
+pip install box2d box2d-kengz --user
+```
+
+
+## Visualizing the result directly
+
+[WIP]
+
+
+## License
+
+This project is under the GNU General Public License - see the [LICENSE.md](LICENSE.md) file for details
+
+## Acknowledgements
+
+Inspired from [Colin Skow](https://github.com/colinskow)'s [implementation](https://github.com/colinskow/move37/tree/master/ars)
