@@ -25,7 +25,7 @@ pip install box2d box2d-kengz --user
 
 ## License
 
-This project is under the GNU General Public License - see the [LICENSE.md](LICENSE.md) file for details
+This project is under the GNU General Public License - see the [LICENSE](LICENSE) file for details
 
 ## Acknowledgements
 
