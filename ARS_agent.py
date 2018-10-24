@@ -11,8 +11,8 @@ ENV_NAME = 'BipedalWalker-v2'
 
 
 class ARS_agent():
-    def __init__(self, env, n_iter = 1000, n_deltas = 16, sigma = 0.03, 
-                 n_best = 16, learning_rate = 0.02, max_ep_iter = 2000):
+    def __init__(self, env, n_iter = 1000, n_deltas = 16, sigma = 0.05, 
+                 n_best = 16, learning_rate = 0.4, max_ep_iter = 500):
         self.n_iter = n_iter
         self.n_deltas = n_deltas
         self.sigma = sigma
@@ -25,10 +25,12 @@ class ARS_agent():
     def train(self):
         theta = np.zeros((self.env.observation_space.shape[0], self.env.action_space.shape[0]))
         for i in range(self.n_iter):
+            print("Step : ", i, "Reward : ", self.evaluate(theta))
             deltas = self.sample_deltas()
-            rewards = self.evaluate(theta, deltas)
-            best_rewards = self.keep_best(rewards)
-            theta = self.update(theta, best_rewards, rewards, deltas)
+            rewards, rollouts = self.evaluate(theta, deltas)
+            sigma_rewards = np.std(rewards[:,0] + rewards[:,1])
+            best_rollouts = self.keep_best(rollouts)
+            theta = self.update(theta, best_rollouts, sigma_rewards)
         return theta
         
     def sample_deltas(self):
@@ -42,12 +44,14 @@ class ARS_agent():
         if deltas is None:
             return self.episode(theta)
         else:
-            rewards = np.zeros((self.n_deltas,2))
+            rewards = np.zeros((self.n_deltas, 2))
+            rollouts = []
             for i in range (self.n_deltas):
                 r_pos = self.episode(theta + deltas[i])
                 r_neg = self.episode(theta - deltas[i])
-                rewards[i] = [r_pos,r_neg]
-            return rewards
+                rewards[i] = [r_pos, r_neg]
+                rollouts.append([r_pos, r_neg, deltas[i]])
+            return rewards, rollouts
     
     def episode(self, theta, render = False):
         state = self.env.reset()
@@ -56,31 +60,31 @@ class ARS_agent():
         count_moves = 0
         while not(done) and count_moves < self.max_ep_iter:
             if (render):
-                self.env.render         
+                self.env.render()         
             self.normalizer.update_normalizer(state)
             state = self.normalizer.normalize(state)
             action = state.dot(theta)
             state, reward, done, _ = self.env.step(action)
+            reward = max(min(reward, 1), -1)
             total_reward += reward
+        if (render):
+            self.env.close()
         return total_reward
     
     
-    def keep_best(self, rewards):
-        best_rewards = []
-        for [r_pos, r_neg] in rewards:
-            best_rewards.append(- max(r_pos, r_neg))        #Minus is to get descneding order
-        return np.argsort(best_rewards)[:self.n_best]
+    def keep_best(self, rollouts):
+        best_rollouts = []
+        for [r_pos, r_neg, delta] in rollouts:
+            best_rollouts.append(- max(r_pos, r_neg))        #Minus is to get descending order
+        return [rollouts[k] for k in np.argsort(best_rollouts)[:self.n_best]]
         
         
-    def update(self, theta, best_rewards, rewards, deltas):
-        step = 0.
-        for index in best_rewards:
-            r_pos, r_neg = rewards[index]
-            step += (r_pos - r_neg) * deltas[index]
-            
-        sigma_rewards = np.std(rewards[:,0] + rewards[:,1])
+    def update(self, theta, best_rollouts, sigma_rewards):
+        step = np.zeros(theta.shape)
+        for r_pos, r_neg, delta in best_rollouts:
+            step += (r_pos - r_neg) * delta
         theta += self.learning_rate * step / (self.n_best * sigma_rewards)
-        
+        return theta
         
         
         
@@ -109,8 +113,11 @@ class Normalizer():
 
 
 
-def main():
-    agent = ARS_agent(ENV_NAME)
-    policy = agent.train()
-    
-    agent.episode(policy, render = True)
+agent = ARS_agent(ENV_NAME)
+#policy = agent.train()
+#total_reward = agent.episode(policy, render = True)    
+
+def profiler():      
+    agent_test = ARS_agent('BipedalWalker-v2', n_iter = 10)
+    policy = agent_test.train()
+    return policy
