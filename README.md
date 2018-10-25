@@ -18,9 +18,11 @@ pip install box2d box2d-kengz --user
 ```
 
 
-## Visualizing the result directly
+## Result
 
-[WIP]
+After 1000 iterations of the algorithm, our robolt walks, and even runs !
+
+![alt text](https://github.com/RomDeffayet/Bipedal_robot_walk/blob/master/results_1000steps.gif)
 
 
 ## License
