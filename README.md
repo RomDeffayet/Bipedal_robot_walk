@@ -1,4 +1,4 @@
-# Making a Robot walk
+# Teaching a Robot to walk
 
 This python file implements the **Augmented Random Search** algorithm. I did it as a midterm assignment for [Move37](https://www.theschool.ai/courses/move-37-course/), a [School of AI](https://www.theschool.ai) course.
 
