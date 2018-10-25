@@ -6,13 +6,15 @@ Created on Wed Oct 17 16:04:43 2018
 """
 import numpy as np
 import gym
+from gym import wrappers
 
 ENV_NAME = 'BipedalWalker-v2'
+VIDEO_DIR = 'vids'
 
 
 class ARS_agent():
     def __init__(self, env, n_iter = 1000, n_deltas = 16, sigma = 0.05, 
-                 n_best = 16, learning_rate = 0.4, max_ep_iter = 500):
+                 n_best = 16, learning_rate = 0.4, max_ep_iter = 500, monitor_dir = None):
         self.n_iter = n_iter
         self.n_deltas = n_deltas
         self.sigma = sigma
@@ -21,6 +23,10 @@ class ARS_agent():
         self.max_ep_iter = max_ep_iter
         self.env = gym.make(env)     
         self.normalizer = Normalizer(self.env.observation_space.shape[0])
+        if monitor_dir is not None:
+            should_record = lambda i: self.record_video
+            self.env = wrappers.Monitor(self.env, monitor_dir, video_callable=should_record, force=True)
+        self.record_video = False
     
     
     ### The main loop for training. Calls other methods and returns the final policy
@@ -60,7 +66,10 @@ class ARS_agent():
     ### Actually plays an episode and returns the rewards.
     ### Notice that it uses the normalizer class (defined below) to get inputs between -1 and 1
     ### If render==True, it displays the episode on the screen 
-    def episode(self, theta, render = False):
+    ### If record==True, it records a video and places it in the VIDEO_DIR folder
+    def episode(self, theta, render = False, record = False):
+        if record:
+            self.record_video = True
         state = self.env.reset()
         total_reward = 0.
         done = False
@@ -74,8 +83,9 @@ class ARS_agent():
             state, reward, done, _ = self.env.step(action)
             reward = max(min(reward, 1), -1)
             total_reward += reward
-        if (render):
+        if (render or record):
             self.env.close()
+        self.record_video = False
         return total_reward
     
     ### Only keeps the n_best best improvements (n_best = n_deltas by default)
@@ -118,8 +128,6 @@ class Normalizer():
 
 
 
-
-
-agent = ARS_agent(ENV_NAME)
-policy = agent.train()
-total_reward = agent.episode(policy, render = True)   
+agent = ARS_agent(ENV_NAME, monitor_dir = VIDEO_DIR)
+#policy = agent.train()
+#total_reward = agent.episode(policy, render = True)   
